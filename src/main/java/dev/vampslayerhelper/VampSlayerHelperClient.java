@@ -89,6 +89,6 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
     private static void msg(Minecraft mc, String text, boolean overlay) {
         if (mc.player == null) return;
         if (overlay) mc.gui.hud.setOverlayMessage(Component.literal(text), false);
-        else mc.gui.hud.getChat().addMessage(Component.literal(text));
+        else mc.gui.hud.getChat().addClientSystemMessage(Component.literal(text));
     }
 }

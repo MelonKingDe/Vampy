@@ -46,7 +46,7 @@ public final class Events {
             long now = VampSlayerHelperClient.tickCounter;
             Long last = debugSeen.get(id);
             if (last == null || now - last > 20) {
-                mc.gui.hud.getChat().addMessage(Component.literal("[VSH] Sound: " + id));
+                mc.gui.hud.getChat().addClientSystemMessage(Component.literal("[VSH] Sound: " + id));
             }
             debugSeen.put(id, now);
         }
