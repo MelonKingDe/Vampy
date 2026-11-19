@@ -4,15 +4,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 
-/** Slot auf Holy Ice wechseln -> Rechtsklick -> zurueck auf den vorherigen Slot. */
+/** Wartet kurz, benutzt Holy Ice und stellt danach den vorherigen Slot wieder her. */
 final class TwinclawTask {
     private final Config cfg = Config.get();
-    private int wait;
-    private int phase = 0;      // 0 = wechseln, 1 = benutzen, 2 = zurueck
+    private int wait = 0;
     private int prevSlot = -1;
     private boolean switched = false;
+    private boolean used = false;
 
     TwinclawTask() {
+        // Gewuenschte Reaktionszeit: 100-200 ms (Minecraft verarbeitet Client-Ticks alle ca. 50 ms).
         wait = Config.msToTicks(Config.rand(cfg.twinclawDelayMinMs, cfg.twinclawDelayMaxMs));
     }
 
@@ -22,31 +23,26 @@ final class TwinclawTask {
         if (p == null || mc.gameMode == null) return true;
         if (wait > 0) { wait--; return false; }
 
-        switch (phase) {
-            case 0 -> {
-                prevSlot = p.getInventory().getSelectedSlot();
-                int target = cfg.holyIceSlot - 1;
-                if (target != prevSlot) {
-                    p.getInventory().setSelectedSlot(target);
-                    switched = true;
-                }
-                phase = 1;
-                wait = Config.rand(1, 2);
+        if (!used) {
+            prevSlot = p.getInventory().getSelectedSlot();
+            int target = cfg.holyIceSlot - 1;
+            if (target != prevSlot) {
+                p.getInventory().setSelectedSlot(target);
+                switched = true;
             }
-            case 1 -> {
-                mc.gameMode.useItem(p, InteractionHand.MAIN_HAND);
-                p.swing(InteractionHand.MAIN_HAND);
-                phase = 2;
-                wait = Config.rand(2, 3);
-            }
-            default -> {
-                if (switched && prevSlot >= 0) {
-                    p.getInventory().setSelectedSlot(prevSlot);
-                }
-                return true;
-            }
+
+            // Slotwechsel-Paket und Use-Paket werden direkt hintereinander gesendet.
+            mc.gameMode.useItem(p, InteractionHand.MAIN_HAND);
+            p.swing(InteractionHand.MAIN_HAND);
+            used = true;
+            wait = 1; // Einen Tick warten, bevor der vorherige Slot wiederhergestellt wird.
+            return false;
         }
-        return false;
+
+        if (switched && prevSlot >= 0) {
+            p.getInventory().setSelectedSlot(prevSlot);
+        }
+        return true;
     }
 
     void cancel(Minecraft mc) {

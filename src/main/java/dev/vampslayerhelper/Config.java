@@ -15,13 +15,13 @@ public final class Config {
     public boolean enabled = false;
 
     // ---- Twinclaws ----
-    /** Sound-ID (oder Teil davon) des Twinclaw-Telegraphs. Per Sound-Debug herausfinden. */
+    /** Optionaler Sound-ID-Override. Leer = automatische Erkennung der aufsteigenden Note-Block-Soundfolge. */
     public String twinclawSoundId = "";
     public boolean soundDebug = false;
     public int twinclawCooldownTicks = 80;
     public int holyIceSlot = 2;              // Hotbar-Slot 1-9
-    public int twinclawDelayMinMs = 450;
-    public int twinclawDelayMaxMs = 750;
+    public int twinclawDelayMinMs = 100;
+    public int twinclawDelayMaxMs = 200;
 
     // ---- Impel ----
     public int impelReactMinMs = 100;

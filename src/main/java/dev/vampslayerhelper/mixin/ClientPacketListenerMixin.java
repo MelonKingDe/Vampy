@@ -32,11 +32,11 @@ public abstract class ClientPacketListenerMixin {
 
     @Inject(method = "handleSoundEvent", at = @At("TAIL"), require = 0)
     private void vsh$sound(ClientboundSoundPacket packet, CallbackInfo ci) {
-        Events.onSound(packet.getSound().getRegisteredName());
+        Events.onSound(packet.getSound().getRegisteredName(), packet.getPitch());
     }
 
     @Inject(method = "handleSoundEntityEvent", at = @At("TAIL"), require = 0)
     private void vsh$soundEntity(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
-        Events.onSound(packet.getSound().getRegisteredName());
+        Events.onSound(packet.getSound().getRegisteredName(), packet.getPitch());
     }
 }
