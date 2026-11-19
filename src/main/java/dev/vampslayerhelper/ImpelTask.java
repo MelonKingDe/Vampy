@@ -22,9 +22,11 @@ final class ImpelTask {
     private int step, steps;
     private float totalPitch, totalYaw;
     private boolean jumpHeld, sneakHeld, attackHeld;
+    private final int requestedDurationTicks;
 
-    ImpelTask(Command cmd) {
+    ImpelTask(Command cmd, int requestedDurationTicks) {
         this.cmd = cmd;
+        this.requestedDurationTicks = requestedDurationTicks;
         this.wait = Config.msToTicks(Config.rand(cfg.impelReactMinMs, cfg.impelReactMaxMs));
     }
 
@@ -46,13 +48,18 @@ final class ImpelTask {
                     case JUMP -> {
                         mc.options.keyJump.setDown(true);
                         jumpHeld = true;
-                        wait = Config.rand(2, 3);
+                        wait = requestedDurationTicks > 0
+                                ? requestedDurationTicks : Config.rand(2, 3);
                         phase = Phase.HOLD;
                     }
                     case SNEAK -> {
                         mc.options.keyShift.setDown(true);
                         sneakHeld = true;
-                        wait = cfg.sneakHoldTicks + Config.rand(-2, 2);
+                        // Use the duration displayed by Hypixel (e.g. "SNEAK 1.6s").
+                        // Fall back to config only if the server did not include a duration.
+                        int holdTicks = requestedDurationTicks > 0
+                                ? requestedDurationTicks : cfg.sneakHoldTicks;
+                        wait = Math.max(1, holdTicks);
                         phase = Phase.HOLD;
                     }
                 }
@@ -118,6 +125,10 @@ final class ImpelTask {
         if (jumpHeld) { mc.options.keyJump.setDown(false); jumpHeld = false; }
         if (sneakHeld) { mc.options.keyShift.setDown(false); sneakHeld = false; }
         if (attackHeld) { mc.options.keyAttack.setDown(false); attackHeld = false; }
+    }
+
+    boolean isSameCommand(Command other) {
+        return this.cmd == other;
     }
 
     void cancel(Minecraft mc) {

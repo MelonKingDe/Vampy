@@ -98,13 +98,19 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
         slotKind = Kind.TWINCLAW;
     }
 
-    static void triggerImpel(Minecraft mc, ImpelTask.Command cmd) {
-        if (!isActive(mc) || impel != null) return;
+    static void triggerImpel(Minecraft mc, ImpelTask.Command cmd, int durationTicks) {
+        if (!isActive(mc)) return;
+        // Do not let a stale/short previous task block the next server instruction.
+        if (impel != null) {
+            if (impel.isSameCommand(cmd)) return;
+            impel.cancel(mc);
+            impel = null;
+        }
         // Der Title aktualisiert sich staendig (Timer) -> gleichen Befehl nicht mehrfach ausloesen.
         if (cmd == lastImpelCmd && tickCounter - lastImpelTick < 3) return;
         lastImpelCmd = cmd;
         lastImpelTick = tickCounter;
-        impel = new ImpelTask(cmd);
+        impel = new ImpelTask(cmd, durationTicks);
     }
 
     private static void cancelAll(Minecraft mc) {

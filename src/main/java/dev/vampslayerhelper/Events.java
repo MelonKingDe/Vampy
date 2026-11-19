@@ -16,6 +16,8 @@ public final class Events {
     // The word "IMPEL" is not guaranteed to be included in the same text component.
     private static final Pattern IMPEL =
             Pattern.compile("(?i)\\b(CLICK\\s*UP|CLICK\\s*DOWN|JUMP|SNEAK)\\b");
+    private static final Pattern IMPEL_DURATION =
+            Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*s\\b");
 
     private Events() {}
 
@@ -31,8 +33,16 @@ public final class Events {
         Matcher m = IMPEL.matcher(text);
         if (!m.find()) return;
         String name = m.group(1).toUpperCase(Locale.ROOT).replaceAll("\\s+", "_");
+        int durationTicks = -1;
+        Matcher duration = IMPEL_DURATION.matcher(text);
+        if (duration.find()) {
+            try {
+                float seconds = Float.parseFloat(duration.group(1).replace(',', '.'));
+                durationTicks = Math.max(1, Math.round(seconds * 20f));
+            } catch (NumberFormatException ignored) { }
+        }
         try {
-            VampSlayerHelperClient.triggerImpel(mc, ImpelTask.Command.valueOf(name));
+            VampSlayerHelperClient.triggerImpel(mc, ImpelTask.Command.valueOf(name), durationTicks);
         } catch (IllegalArgumentException ignored) { }
     }
 
