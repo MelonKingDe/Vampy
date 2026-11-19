@@ -19,7 +19,7 @@ public final class Config {
     public String twinclawSoundId = "";
     public boolean soundDebug = false;
     public int twinclawCooldownTicks = 80;
-    public int holyIceSlot = 2;              // Hotbar-Slot 1-9
+    public int holyIceSlot = 4;              // Holy Ice liegt in Hotbar-Slot 4
     public int twinclawDelayMinMs = 100;
     public int twinclawDelayMaxMs = 200;
 
