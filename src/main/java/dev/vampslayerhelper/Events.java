@@ -1,89 +1,74 @@
 package dev.vampslayerhelper;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.player.Player;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Deque;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Wird von den Mixins aufgerufen (Titel-/Actionbar-Texte und eingehende Sounds). */
+/** Wird von den Mixins aufgerufen. Die Erkennung folgt SkyHanni (VampireSlayerFeatures). */
 public final class Events {
     private static final Pattern IMPEL =
             Pattern.compile("(?i)impel\\W*\\s*(CLICK\\s*UP|CLICK\\s*DOWN|JUMP|SNEAK)");
-    private static final Map<String, Long> debugSeen = new HashMap<>();
-    private record NoteCue(float pitch, long tick) {}
-    private static final Deque<NoteCue> noteCue = new ArrayDeque<>();
 
     private Events() {}
 
+    /** Titel/Untertitel (Impel-Befehle). */
     public static void onText(String text) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.isSameThread()) handleText(mc, text);
         else mc.execute(() -> handleText(mc, text));
     }
 
-    public static void onSound(String soundId, float pitch) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.isSameThread()) handleSound(mc, soundId, pitch);
-        else mc.execute(() -> handleSound(mc, soundId, pitch));
-    }
-
     private static void handleText(Minecraft mc, String text) {
         if (text == null) return;
         Matcher m = IMPEL.matcher(text);
         if (!m.find()) return;
-        String name = m.group(1).toUpperCase().replaceAll("\\s+", "_");
+        String name = m.group(1).toUpperCase(Locale.ROOT).replaceAll("\\s+", "_");
         try {
             VampSlayerHelperClient.triggerImpel(mc, ImpelTask.Command.valueOf(name));
         } catch (IllegalArgumentException ignored) { }
     }
 
-    private static void handleSound(Minecraft mc, String id, float pitch) {
-        if (id == null) return;
-        Config c = Config.get();
+    /**
+     * Twinclaws: Der Boss zeigt einen Armor Stand mit dem Namen "TWINCLAWS 1.2s" an.
+     * Wie bei SkyHanni zaehlt der Stand nur, wenn er maximal 5 Bloecke vom Boss entfernt ist.
+     */
+    public static void onArmorStandUpdate(ArmorStand stand) {
+        Minecraft mc = Minecraft.getInstance();
+        // Nur Client-Thread (ignoriert Entities des integrierten Servers).
+        if (!mc.isSameThread() || mc.level == null || mc.player == null) return;
 
-        if (c.soundDebug && mc.player != null && !id.contains("step")) {
-            long now = VampSlayerHelperClient.tickCounter;
-            Long last = debugSeen.get(id);
-            if (last == null || now - last > 20) {
-                mc.gui.hud.getChat().addClientSystemMessage(Component.literal("[VSH] Sound: " + id + " (pitch=" + pitch + ")"));
-            }
-            debugSeen.put(id, now);
-        }
+        Component custom = stand.getCustomName();
+        if (custom == null) return;
+        if (!custom.getString().toUpperCase(Locale.ROOT).contains("TWINCLAWS")) return;
 
-        String lowerId = id.toLowerCase();
-        String wanted = c.twinclawSoundId == null ? "" : c.twinclawSoundId.trim();
-
-        // Twinclaws use a short ascending note-block/beep telegraph. Detect three
-        // consecutive note-block sound packets with rising pitch instead of
-        // requiring users to know the server-side sound registry ID.
-        if (lowerId.contains("note_block")) {
-            long now = VampSlayerHelperClient.tickCounter;
-            while (!noteCue.isEmpty() && now - noteCue.peekFirst().tick() > 16) noteCue.removeFirst();
-            noteCue.addLast(new NoteCue(pitch, now));
-            while (noteCue.size() > 3) noteCue.removeFirst();
-            if (noteCue.size() == 3) {
-                NoteCue[] cue = noteCue.toArray(new NoteCue[0]);
-                boolean timed = cue[1].tick() - cue[0].tick() >= 1
-                        && cue[1].tick() - cue[0].tick() <= 12
-                        && cue[2].tick() - cue[1].tick() >= 1
-                        && cue[2].tick() - cue[1].tick() <= 12;
-                boolean rising = cue[1].pitch() > cue[0].pitch() + 0.005f
-                        && cue[2].pitch() > cue[1].pitch() + 0.005f;
-                if (timed && rising) {
-                    noteCue.clear();
-                    VampSlayerHelperClient.triggerTwinclaw(mc);
-                }
-            }
-        }
-
-        // Optional exact/partial sound-ID override remains available in config.
-        if (!wanted.isEmpty() && lowerId.contains(wanted.toLowerCase())) {
+        for (Player p : mc.level.players()) {
+            if (!isBoss(p, mc)) continue;
+            if (p.distanceToSqr(stand) > 25.0) continue;                     // 5 Bloecke wie SkyHanni
             VampSlayerHelperClient.triggerTwinclaw(mc);
+            return;
         }
+    }
+
+    /** Ist ein Boss-Spieler (Name enthaelt "Bloodfiend") in deiner Naehe? */
+    public static boolean bossNearby(Minecraft mc) {
+        if (mc.level == null) return false;
+        for (Player p : mc.level.players()) {
+            if (isBoss(p, mc)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isBoss(Player p, Minecraft mc) {
+        if (!(p instanceof RemotePlayer) || mc.player == null) return false;
+        Config cfg = Config.get();
+        String bossName = cfg.bossNameContains == null ? "" : cfg.bossNameContains.toLowerCase(Locale.ROOT);
+        if (!p.getName().getString().toLowerCase(Locale.ROOT).contains(bossName)) return false;
+        return p.distanceTo(mc.player) <= cfg.maxBossDistance;
     }
 }

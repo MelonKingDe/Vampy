@@ -7,16 +7,12 @@
   "authors": [],
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "dev.vampslayerhelper.VampSlayerHelperClient"
-    ]
+    "client": ["dev.vampslayerhelper.VampSlayerHelperClient"]
   },
-  "mixins": [
-    "vampslayerhelper.mixins.json"
-  ],
+  "mixins": ["vampslayerhelper.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.19.3",
-    "minecraft": "~26.2",
+    "fabricloader": ">=0.20.1",
+    "minecraft": ">=26.2",
     "java": ">=25",
     "fabric-api": "*"
   }
