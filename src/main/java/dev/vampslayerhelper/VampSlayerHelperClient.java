@@ -71,7 +71,7 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
     /** Unter der eingestellten HP-Schwelle: Healing Melon benutzen. */
     private static void checkAutoHeal(Minecraft mc) {
         Config cfg = Config.get();
-        if (!cfg.autoHeal || slotTask != null || mc.gui.screen() != null) return;
+        if (!cfg.autoHeal || slotTask != null || mc.screen != null) return;
         LocalPlayer p = mc.player;
         if (p == null || p.isDeadOrDying()) return;
         float max = p.getMaxHealth();
@@ -88,7 +88,7 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
 
     static void triggerTwinclaw(Minecraft mc) {
         Config cfg = Config.get();
-        if (!isActive(mc) || mc.gui.screen() != null) return;
+        if (!isActive(mc) || mc.screen != null) return;
         if (slotTask != null && slotKind == Kind.TWINCLAW) return;
         if (tickCounter - lastTwinclawTick < cfg.twinclawCooldownTicks) return;
         // Twinclaws hat Vorrang: eine laufende Heilung wird abgebrochen (Slot wird zurueckgesetzt).
@@ -101,7 +101,9 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
     static void triggerImpel(Minecraft mc, ImpelTask.Command cmd) {
         if (!isActive(mc) || impel != null) return;
         // Der Title aktualisiert sich staendig (Timer) -> gleichen Befehl nicht mehrfach ausloesen.
-        if (cmd == lastImpelCmd && tickCounter - lastImpelTick < 50) return;
+        // Title/subtitle/action-bar can report the same instruction in adjacent ticks.
+        // Debounce only those duplicate packets; repeated real commands must still work.
+        if (cmd == lastImpelCmd && tickCounter - lastImpelTick < 3) return;
         lastImpelCmd = cmd;
         lastImpelTick = tickCounter;
         impel = new ImpelTask(cmd);
@@ -113,10 +115,6 @@ public final class VampSlayerHelperClient implements ClientModInitializer {
     }
 
     private static void msg(Minecraft mc, String text, boolean overlay) {
-        if (mc.player != null) {
-            Component message = Component.literal(text);
-            if (overlay) mc.player.sendOverlayMessage(message);
-            else mc.player.sendSystemMessage(message);
-        }
+        if (mc.player != null) mc.player.displayClientMessage(Component.literal(text), overlay);
     }
 }

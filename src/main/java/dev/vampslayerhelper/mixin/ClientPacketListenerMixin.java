@@ -5,6 +5,8 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,4 +30,13 @@ public abstract class ClientPacketListenerMixin {
         Events.onText(packet.text().getString());
     }
 
+    @Inject(method = "handleSoundEvent", at = @At("TAIL"), require = 0)
+    private void vsh$sound(ClientboundSoundPacket packet, CallbackInfo ci) {
+        Events.onSound(packet.getSound().getRegisteredName(), packet.getPitch());
+    }
+
+    @Inject(method = "handleSoundEntityEvent", at = @At("TAIL"), require = 0)
+    private void vsh$soundEntity(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
+        Events.onSound(packet.getSound().getRegisteredName(), packet.getPitch());
+    }
 }

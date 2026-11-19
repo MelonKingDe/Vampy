@@ -20,4 +20,10 @@ public abstract class HudMixin {
     private void vsh$subtitle(Component subtitle, CallbackInfo ci) {
         if (subtitle != null) Events.onText(subtitle.getString());
     }
+
+    // Hypixel may display Impel instructions in the action bar instead of a title.
+    @Inject(method = "setOverlayMessage", at = @At("HEAD"), require = 0)
+    private void vsh$actionbar(Component message, boolean animate, CallbackInfo ci) {
+        if (message != null) Events.onText(message.getString());
+    }
 }

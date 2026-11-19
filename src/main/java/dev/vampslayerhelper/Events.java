@@ -12,8 +12,10 @@ import java.util.regex.Pattern;
 
 /** Wird von den Mixins aufgerufen. Die Erkennung folgt SkyHanni (VampireSlayerFeatures). */
 public final class Events {
+    // Hypixel sends the Impel instruction as a title, subtitle, or action-bar message.
+    // The word "IMPEL" is not guaranteed to be included in the same text component.
     private static final Pattern IMPEL =
-            Pattern.compile("(?i)impel\\W*\\s*(CLICK\\s*UP|CLICK\\s*DOWN|JUMP|SNEAK)");
+            Pattern.compile("(?i)\\b(CLICK\\s*UP|CLICK\\s*DOWN|JUMP|SNEAK)\\b");
 
     private Events() {}
 

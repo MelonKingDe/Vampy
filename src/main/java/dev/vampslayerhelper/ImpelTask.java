@@ -21,7 +21,7 @@ final class ImpelTask {
     private int wait;
     private int step, steps;
     private float totalPitch, totalYaw;
-    private boolean jumpHeld, sneakHeld;
+    private boolean jumpHeld, sneakHeld, attackHeld;
 
     ImpelTask(Command cmd) {
         this.cmd = cmd;
@@ -32,6 +32,11 @@ final class ImpelTask {
     boolean tick(Minecraft mc) {
         LocalPlayer p = mc.player;
         if (p == null) return true;
+        // A real left-click is required for CLICK UP; swing() alone is only cosmetic.
+        if (attackHeld) {
+            mc.options.keyAttack.setDown(false);
+            attackHeld = false;
+        }
         if (wait > 0) { wait--; return false; }
 
         switch (phase) {
@@ -60,7 +65,10 @@ final class ImpelTask {
             }
             case ACT -> {
                 if (cmd == Command.CLICK_UP) {
-                    p.swing(InteractionHand.MAIN_HAND);                 // Linksklick
+                    // Let Minecraft process an actual attack-key press on the next tick.
+                    mc.options.keyAttack.setDown(true);
+                    attackHeld = true;
+                    p.swing(InteractionHand.MAIN_HAND);
                 } else if (mc.gameMode != null) {
                     mc.gameMode.useItem(p, InteractionHand.MAIN_HAND);  // Rechtsklick
                     p.swing(InteractionHand.MAIN_HAND);
@@ -109,6 +117,7 @@ final class ImpelTask {
     private void releaseKeys(Minecraft mc) {
         if (jumpHeld) { mc.options.keyJump.setDown(false); jumpHeld = false; }
         if (sneakHeld) { mc.options.keyShift.setDown(false); sneakHeld = false; }
+        if (attackHeld) { mc.options.keyAttack.setDown(false); attackHeld = false; }
     }
 
     void cancel(Minecraft mc) {
